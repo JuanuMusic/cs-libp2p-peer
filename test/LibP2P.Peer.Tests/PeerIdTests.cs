@@ -68,12 +68,12 @@ namespace LibP2P.Peer.Tests
             Action<KeySet> test = (ks) =>
             {
                 var p1 = PeerId.Decode(ks.hpkp);
-                Assert.AreEqual(p1.ToString(MultibaseEncoding.Base16Upper), ks.hpk);
+                Assert.AreEqual(p1.ToString(MultibaseEncoding.Base16Upper), ks.hpk, "invalid hpk");
                 Assert.True(p1.MatchesPublicKey(ks.pk));
 
                 var p2 = new PeerId(ks.pk);
                 Assert.AreEqual(p1, p2);
-                Assert.AreEqual(p2.ToString(MultibaseEncoding.Base58Btc), ks.hpkp);
+                Assert.AreEqual(p2.ToString(MultibaseEncoding.Base58Btc), ks.hpkp, "invalid hpkp");
             };
 
             test(gen1);
