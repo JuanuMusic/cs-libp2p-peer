@@ -3,7 +3,7 @@ using LibP2P.Crypto;
 using Multiformats.Base;
 using Multiformats.Hash;
 using Multiformats.Hash.Algorithms;
-using Xunit;
+using NUnit.Framework;
 
 namespace LibP2P.Peer.Tests
 {
@@ -27,8 +27,8 @@ namespace LibP2P.Peer.Tests
                 {
                     sk = pair.PrivateKey,
                     pk = pair.PublicKey,
-                    hpk = h.ToString(Multibase.Base16),
-                    hpkp = h.ToString(Multibase.Base58)
+                    hpk = h.ToString(MultibaseEncoding.Base16Upper),
+                    hpkp = h.ToString(MultibaseEncoding.Base58Btc)
                 };
                 return ks;
             }
@@ -39,8 +39,8 @@ namespace LibP2P.Peer.Tests
                 var ks = new KeySet {sk = PrivateKey.Unmarshal(skBytes)};
                 ks.pk = ks.sk.GetPublic();
                 var h = Multihash.Sum<SHA2_256>(ks.pk.Bytes);
-                ks.hpk = h.ToString(Multibase.Base16);
-                ks.hpkp = h.ToString(Multibase.Base58);
+                ks.hpk = h.ToString(MultibaseEncoding.Base16Upper);
+                ks.hpkp = h.ToString(MultibaseEncoding.Base58Btc);
                 if (ks.hpkp != hpkp)
                     throw new Exception($"hpkp doesn't match key. want: {hpkp}, got: {ks.hpkp}");
 
@@ -54,25 +54,26 @@ namespace LibP2P.Peer.Tests
         private const string hpkpMan = "QmRK3JgmVEGiewxWbhpXLJyjWuGuLeSTMTndA1coMHEy5o";
         private const string skManBytes = "CAAS4AQwggJcAgEAAoGBAL7w+Wc4VhZhCdM/+Hccg5Nrf4q9NXWwJylbSrXz/unFS24wyk6pEk0zi3W7li+vSNVO+NtJQw9qGNAMtQKjVTP+3Vt/jfQRnQM3s6awojtjueEWuLYVt62z7mofOhCtj+VwIdZNBo/EkLZ0ETfcvN5LVtLYa8JkXybnOPsLvK+PAgMBAAECgYBdk09HDM7zzL657uHfzfOVrdslrTCj6p5moDzvCxLkkjIzYGnlPuqfNyGjozkpSWgSUc+X+EGLLl3WqEOVdWJtbM61fewEHlRTM5JzScvwrJ39t7o6CCAjKA0cBWBd6UWgbN/t53RoWvh9HrA2AW5YrT0ZiAgKe9y7EMUaENVJ8QJBAPhpdmb4ZL4Fkm4OKiaNEcjzn6mGTlZtef7K/0oRC9+2JkQnCuf6HBpaRhJoCJYg7DW8ZY+AV6xClKrgjBOfERMCQQDExhnzu2dsQ9k8QChBlpHO0TRbZBiQfC70oU31kM1AeLseZRmrxv9Yxzdl8D693NNWS2JbKOXl0kMHHcuGQLMVAkBZ7WvkmPV3aPL6jnwp2pXepntdVnaTiSxJ1dkXShZ/VSSDNZMYKY306EtHrIu3NZHtXhdyHKcggDXrqkBrdgErAkAlpGPojUwemOggr4FD8sLX1ot2hDJyyV7OK2FXfajWEYJyMRL1Gm9Uk1+Un53RAkJneqpJGAzKpyttXBTIDO51AkEA98KTiROMnnU8Y6Mgcvr68/SMIsvCYMt9/mtwSBGgl80VaTQ5Hpaktl6XbhVUt5Wv0tRxlXZiViCGCD1EtrrwTw==";
 
-        public PeerIdTests()
+        [SetUp]
+        public void Setup()
         {
             gen1 = KeySet.Generate();
             gen2 = KeySet.Generate();
             man = KeySet.Load(hpkpMan, skManBytes);
         }
 
-        [Fact]
+        [Test]
         public void TestIdMatchesPublicKey()
         {
             Action<KeySet> test = (ks) =>
             {
                 var p1 = PeerId.Decode(ks.hpkp);
-                Assert.Equal(p1.ToString(Multibase.Base16), ks.hpk);
+                Assert.AreEqual(p1.ToString(MultibaseEncoding.Base16Upper), ks.hpk);
                 Assert.True(p1.MatchesPublicKey(ks.pk));
 
                 var p2 = new PeerId(ks.pk);
-                Assert.Equal(p1, p2);
-                Assert.Equal(p2.ToString(Multibase.Base58), ks.hpkp);
+                Assert.AreEqual(p1, p2);
+                Assert.AreEqual(p2.ToString(MultibaseEncoding.Base58Btc), ks.hpkp);
             };
 
             test(gen1);
@@ -80,17 +81,17 @@ namespace LibP2P.Peer.Tests
             test(man);
         }
 
-        [Fact]
+        [Test]
         public void TestIdMatchesPrivateKey()
         {
             Action<KeySet> test = (ks) =>
             {
                 var p1 = PeerId.Decode(ks.hpkp);
-                Assert.Equal(p1.ToString(Multibase.Base16), ks.hpk);
+                Assert.AreEqual(p1.ToString(MultibaseEncoding.Base16Upper), ks.hpk);
                 Assert.True(p1.MatchesPrivateKey(ks.sk));
 
                 var p2 = new PeerId(ks.sk);
-                Assert.Equal(p1, p2);
+                Assert.AreEqual(p1, p2);
             };
 
             test(gen1);

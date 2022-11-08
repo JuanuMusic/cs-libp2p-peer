@@ -37,7 +37,7 @@ namespace LibP2P.Peer
         {
         }
 
-        public int CompareTo(PeerId other) => string.Compare(ToString(Multibase.Base16), other.ToString(Multibase.Base16), StringComparison.Ordinal);
+        public int CompareTo(PeerId other) => string.Compare(ToString(MultibaseEncoding.Base16Upper), other.ToString(MultibaseEncoding.Base16Upper), StringComparison.Ordinal);
 
         public bool Equals(PeerId other) => _value.SequenceEqual(other?._value ?? Array.Empty<byte>());
 
@@ -51,7 +51,7 @@ namespace LibP2P.Peer
 
         public override string ToString()
         {
-            var id = ToString(Multibase.Base58);
+            var id = ToString(MultibaseEncoding.Base58Btc);
             if (id.StartsWith("Qm"))
                 id = id.Substring(2);
 
@@ -67,7 +67,7 @@ namespace LibP2P.Peer
         public static PeerId Decode(string s)
         {
             Multihash mh;
-            return Multihash.TryParse(s, out mh) ? new PeerId(mh) : new PeerId(Multibase.DecodeRaw<Base16Encoding>(s.ToUpper()));
+            return Multihash.TryParse(s, out mh) ? new PeerId(mh) : new PeerId(Multibase.DecodeRaw(MultibaseEncoding.Base16Upper, s.ToUpper()));
         }
 
         public static implicit operator PeerId(string value) => new PeerId(value);

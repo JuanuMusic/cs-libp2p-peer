@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1</TargetFrameworks>
     <RuntimeIdentifiers>win7-x64;linux-x64</RuntimeIdentifiers>
     <Description>LibP2P Peer</Description>
     <Copyright>Copyright © tabrath 2017</Copyright>
@@ -35,6 +35,6 @@
 
   <ItemGroup>
     <PackageReference Include="LibP2P.Crypto" Version="1.1.0" />
-    <PackageReference Include="Multiformats.Hash" Version="1.2.1" />
+    <PackageReference Include="Multiformats.Hash" Version="1.5.0" />
   </ItemGroup>
 </Project>
