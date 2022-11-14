@@ -1,102 +1,114 @@
 ﻿using System;
-using LibP2P.Crypto;
+using LibP2P.Peer.Interfaces;
 using Multiformats.Base;
-using Multiformats.Hash;
-using Multiformats.Hash.Algorithms;
 using NUnit.Framework;
 
 namespace LibP2P.Peer.Tests
 {
     public class PeerIdTests
     {
-        private class KeySet
+        
+
+        [Test(Description = "create a new id from multihash")]
+        public void CreateNewIdFromMultihash()
         {
-            public PrivateKey sk { get; protected set; }
-            public PublicKey pk { get; protected set; }
-            public string hpk { get; protected set; }
-            public string hpkp { get; protected set; }
-
-            protected KeySet() { }
-
-            public static KeySet Generate()
-            {
-                var pair = KeyPair.Generate(KeyType.RSA, 512);
-
-                var h = Multihash.Sum<SHA2_256>(pair.PublicKey.Bytes);
-                var ks = new KeySet
-                {
-                    sk = pair.PrivateKey,
-                    pk = pair.PublicKey,
-                    hpk = h.ToString(MultibaseEncoding.Base16Upper),
-                    hpkp = h.ToString(MultibaseEncoding.Base58Btc)
-                };
-                return ks;
-            }
-
-            public static KeySet Load(string hpkp, string skBytesStr)
-            {
-                var skBytes = Convert.FromBase64String(skBytesStr);
-                var ks = new KeySet {sk = PrivateKey.Unmarshal(skBytes)};
-                ks.pk = ks.sk.GetPublic();
-                var h = Multihash.Sum<SHA2_256>(ks.pk.Bytes);
-                ks.hpk = h.ToString(MultibaseEncoding.Base16Upper);
-                ks.hpkp = h.ToString(MultibaseEncoding.Base58Btc);
-                if (ks.hpkp != hpkp)
-                    throw new Exception($"hpkp doesn't match key. want: {hpkp}, got: {ks.hpkp}");
-
-                return ks;
-            }
+            var decoded = new Base58Btc().BaseDecode("12D3KooWbtp1AcgweFSArD7dbKWYpAr8MZR1tofwNwLFLjeNGLWa");
+            var id = PeerId.FromBytes(decoded);
+            //Assert.That(id.equals(buf)).to.be.true()
         }
 
-        private KeySet gen1;
-        private KeySet gen2;
-        private KeySet man;
-        private const string hpkpMan = "QmRK3JgmVEGiewxWbhpXLJyjWuGuLeSTMTndA1coMHEy5o";
-        private const string skManBytes = "CAAS4AQwggJcAgEAAoGBAL7w+Wc4VhZhCdM/+Hccg5Nrf4q9NXWwJylbSrXz/unFS24wyk6pEk0zi3W7li+vSNVO+NtJQw9qGNAMtQKjVTP+3Vt/jfQRnQM3s6awojtjueEWuLYVt62z7mofOhCtj+VwIdZNBo/EkLZ0ETfcvN5LVtLYa8JkXybnOPsLvK+PAgMBAAECgYBdk09HDM7zzL657uHfzfOVrdslrTCj6p5moDzvCxLkkjIzYGnlPuqfNyGjozkpSWgSUc+X+EGLLl3WqEOVdWJtbM61fewEHlRTM5JzScvwrJ39t7o6CCAjKA0cBWBd6UWgbN/t53RoWvh9HrA2AW5YrT0ZiAgKe9y7EMUaENVJ8QJBAPhpdmb4ZL4Fkm4OKiaNEcjzn6mGTlZtef7K/0oRC9+2JkQnCuf6HBpaRhJoCJYg7DW8ZY+AV6xClKrgjBOfERMCQQDExhnzu2dsQ9k8QChBlpHO0TRbZBiQfC70oU31kM1AeLseZRmrxv9Yxzdl8D693NNWS2JbKOXl0kMHHcuGQLMVAkBZ7WvkmPV3aPL6jnwp2pXepntdVnaTiSxJ1dkXShZ/VSSDNZMYKY306EtHrIu3NZHtXhdyHKcggDXrqkBrdgErAkAlpGPojUwemOggr4FD8sLX1ot2hDJyyV7OK2FXfajWEYJyMRL1Gm9Uk1+Un53RAkJneqpJGAzKpyttXBTIDO51AkEA98KTiROMnnU8Y6Mgcvr68/SMIsvCYMt9/mtwSBGgl80VaTQ5Hpaktl6XbhVUt5Wv0tRxlXZiViCGCD1EtrrwTw==";
-
-        [SetUp]
-        public void Setup()
+        [Test(Description = "parses a v1 CID with the libp2p-key codec")]
+        public void ParsesCIDv1WithLibP2PKeyCodec()
         {
-            gen1 = KeySet.Generate();
-            gen2 = KeySet.Generate();
-            man = KeySet.Load(hpkpMan, skManBytes);
+            string str = "bafzaajaiaejca24q7uhr7adt3rtai4ixtn2r3q72kccwvwzg6wnfetwqyvrs5n2d";
+            var id = PeerId.FromString(str);
+
+            Assert.That(id.Type, Is.EqualTo(PeerIdType.Ed25519));
+            Assert.That(id.ToString(), Is.EqualTo("12D3KooWH4G2B3x5BZHH3j2ccMsBLhzR8u1uzrAQshg429xGFGPk"));
+            Assert.That(id.ToCID().ToString(), Is.EqualTo("bafzaajaiaejca24q7uhr7adt3rtai4ixtn2r3q72kccwvwzg6wnfetwqyvrs5n2d"));
         }
 
-        [Test]
-        public void TestIdMatchesPublicKey()
+        [Test(Description = "defaults to base58btc when stringifying")]
+        public void DefaultsToBase58BtcWhenStringifying()
         {
-            Action<KeySet> test = (ks) =>
-            {
-                var p1 = PeerId.Decode(ks.hpkp);
-                Assert.AreEqual(p1.ToString(MultibaseEncoding.Base16Upper), ks.hpk, "invalid hpk");
-                Assert.True(p1.MatchesPublicKey(ks.pk));
-
-                var p2 = new PeerId(ks.pk);
-                Assert.AreEqual(p1, p2);
-                Assert.AreEqual(p2.ToString(MultibaseEncoding.Base58Btc), ks.hpkp, "invalid hpkp");
-            };
-
-            test(gen1);
-            test(gen2);
-            test(man);
+            var decoded = Multibase.DecodeRaw(MultibaseEncoding.Base58Btc, "12D3KooWbtp1AcgweFSArD7dbKWYpAr8MZR1tofwNwLFLjeNGLWa");
+            var id = PeerId.FromBytes(decoded);
+            Assert.That(id.ToString(), Is.EqualTo("12D3KooWbtp1AcgweFSArD7dbKWYpAr8MZR1tofwNwLFLjeNGLWa"));
         }
 
-        [Test]
-        public void TestIdMatchesPrivateKey()
+        [Test(Description ="turns into a CID")]
+        public void TurnsIntoACID()
         {
-            Action<KeySet> test = (ks) =>
-            {
-                var p1 = PeerId.Decode(ks.hpkp);
-                Assert.AreEqual(p1.ToString(MultibaseEncoding.Base16Upper), ks.hpk);
-                Assert.True(p1.MatchesPrivateKey(ks.sk));
+            byte[] buf = Multibase.DecodeRaw(MultibaseEncoding.Base58Btc, "12D3KooWbtp1AcgweFSArD7dbKWYpAr8MZR1tofwNwLFLjeNGLWa");
+            var id = PeerId.FromBytes(buf);
+            Assert.That(id.ToCID().ToString(), Is.EqualTo("bafzaajaiaejcda3tmul6p2537j5upxpjgz3jabbzxqrjqvhhfnthtnezvwibizjh"));
+        }
 
-                var p2 = new PeerId(ks.sk);
-                Assert.AreEqual(p1, p2);
-            };
+        [Test(Description ="equals a byte[]")]
+        public void EqualsAByteArray()
+        {
+            byte[] buf = Multibase.DecodeRaw(MultibaseEncoding.Base58Btc, "12D3KooWbtp1AcgweFSArD7dbKWYpAr8MZR1tofwNwLFLjeNGLWa");
+            var id = PeerId.FromBytes(buf);
+            Assert.That(id.Equals(buf));
+        }
 
-            test(gen1);
-            test(gen2);
-            test(man);
+        [Test(Description = "equals a PeerId")]
+        public void EqualsAPeerId()
+        {
+            byte[] buf = Multibase.DecodeRaw(MultibaseEncoding.Base58Btc, "12D3KooWbtp1AcgweFSArD7dbKWYpAr8MZR1tofwNwLFLjeNGLWa");
+            var id = PeerId.FromBytes(buf);
+            Assert.That(id.Equals(PeerId.FromBytes(buf)));
+        }
+
+        [Test(Description = "parses a PeerId as RSA")]
+        public void ParsesPeerIdAsRSA()
+        {
+            var id = PeerId.FromString("QmZHBBrcBtDk7yVzcNUDJBJsZnVGtPHzpTzu16J7Sk6hbp");
+            Assert.That(id.GetType(), Is.EqualTo(typeof(RSAPeerId)));
+        }
+
+        [Test(Description = "parses a PeerId as secp256k1")]
+        public void ParsesPeerIdAsSecp256k1()
+        {
+            var id = PeerId.FromString("16Uiu2HAkxSnqYGDU5iZTQrZyAcQDQHKrZqSNPBmKFifEagS2XfrL");
+            Assert.That(id.GetType(), Is.EqualTo(typeof(Secp256k1PeerId)));
+        }
+
+        [Test(Description = "decodes a PeerId as Ed25519")]
+        public void DecodesPeerIdAsEd25519()
+        {
+            byte[] buf = Multibase.DecodeRaw(MultibaseEncoding.Base58Btc, "12D3KooWbtp1AcgweFSArD7dbKWYpAr8MZR1tofwNwLFLjeNGLWa");
+            var id = PeerId.FromBytes(buf);
+            Assert.That(id.GetType(), Is.EqualTo(typeof(Ed25519PeerId)));
+        }
+
+        [Test(Description = "decodes a PeerId as RSA")]
+        public void DecodesPeerIdAsRSA()
+        {
+            byte[] buf = Multibase.DecodeRaw(MultibaseEncoding.Base58Btc, "QmZHBBrcBtDk7yVzcNUDJBJsZnVGtPHzpTzu16J7Sk6hbp");
+            var id = PeerId.FromBytes(buf);
+            Assert.That(id.GetType(), Is.EqualTo(typeof(RSAPeerId)));
+        }
+
+        [Test(Description = "decodes a PeerId as secp256k1")]
+        public void DecodesPeerIdAsSecp256k1()
+        {
+            byte[] buf = Multibase.DecodeRaw(MultibaseEncoding.Base58Btc, "16Uiu2HAkxSnqYGDU5iZTQrZyAcQDQHKrZqSNPBmKFifEagS2XfrL");
+            var id = PeerId.FromBytes(buf);
+            Assert.That(id.GetType(), Is.EqualTo(typeof(Secp256k1PeerId)));
+        }
+
+        [Test(Description = "ToJSON()")]
+        public void ToJSON()
+        {
+            byte[] buf = Multibase.DecodeRaw(MultibaseEncoding.Base58Btc, "16Uiu2HAkxSnqYGDU5iZTQrZyAcQDQHKrZqSNPBmKFifEagS2XfrL");
+            var id = PeerId.FromBytes(buf);
+            string json = id.ToJSON();
+            var reconst = Newtonsoft.Json.JsonConvert.DeserializeObject<PeerIdRecord>(json);
+            Assert.That(reconst.Type, Is.EqualTo((int)id.Type));
+            Assert.That(reconst.Hash, Is.EqualTo(id.Multihash.Bytes));
+            Assert.That(reconst.PrivateKey, Is.EqualTo(id.PrivateKey));
+            Assert.That(reconst.PublicKey, Is.EqualTo(id.PublicKey));
         }
     }
 }

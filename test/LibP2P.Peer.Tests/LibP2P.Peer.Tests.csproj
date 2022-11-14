@@ -11,7 +11,15 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NET;NET6_0;NETCOREAPP;</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+    <CustomCommands>
+      <CustomCommands>
+        <Command>
+          <type>AfterBuild</type>
+        </Command>
+      </CustomCommands>
+    </CustomCommands>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -26,10 +34,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\LibP2P.Peer\LibP2P.Peer.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <None Remove="NUnit3TestAdapter" />
     <None Remove="NUnit" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\LibP2P.Peer\LibP2P.Peer.csproj" />
   </ItemGroup>
 </Project>
